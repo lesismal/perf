@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"go-net-benchmark/perf"
 	"time"
+
+	"github.com/lesismal/perf"
 )
 
 func main() {
@@ -13,21 +14,23 @@ func main() {
 		panic(err)
 	}
 
-	recorder.Warmup(100, 300, func() {
-		time.Sleep(time.Second / 10)
+	recorder.Warmup(100, 30000, func() error {
+		time.Sleep(time.Second / 1000)
+		return nil
 	})
 
 	collector.Start(true, true, true, time.Second)
 
-	recorder.Benchmark(100, 300, func() {
-		time.Sleep(time.Second)
+	recorder.Benchmark(1000, 1000000, func() error {
+		time.Sleep(time.Second / 10000)
+		return nil
 	})
 
 	collector.Stop()
 
 	fmt.Println("-------------------------")
 	fmt.Println("recorder:")
-	fmt.Println(recorder.Json())
+	fmt.Println(recorder.String())
 	fmt.Println("-------------------------")
 	fmt.Println("collector:")
 	fmt.Println(collector.Json())
