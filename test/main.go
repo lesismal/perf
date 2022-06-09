@@ -14,14 +14,14 @@ func main() {
 		panic(err)
 	}
 
-	recorder.Warmup(100, 30000, func() error {
+	recorder.Warmup(100, 1000, func() error {
 		time.Sleep(time.Second / 1000)
 		return nil
 	})
 
 	collector.Start(true, true, true, time.Second)
 
-	recorder.Benchmark(100, 20000, func() error {
+	recorder.Benchmark(100, 2000, func() error {
 		time.Sleep(time.Second / 1000)
 		return nil
 	})
@@ -36,4 +36,12 @@ func main() {
 	fmt.Println(recorder.String())
 	fmt.Println("-------------------------")
 	fmt.Println(collector.Json())
+	fmt.Println("-------------------------")
+	table := perf.NewTable()
+	table.SetTitle([]string{"GoNet", "TP50", "TP99", "CPU", "MEM"})
+	table.AddRow([]string{"---", "---", "---", "---", "---"})
+	table.AddRow([]string{"net", "3.12ms", "8.97", "1.3%", "17m"})
+	table.AddRow([]string{"nbio", "12.12ms", "22.95", "1.21%", "7m"})
+	table.AddRow([]string{"gnet", "13.54ms", "25.767", "1.32%", "7m"})
+	fmt.Println(table.String())
 }
