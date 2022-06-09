@@ -1,7 +1,6 @@
 package perf
 
 import (
-	"encoding/json"
 	"fmt"
 	"sort"
 	"sync"
@@ -74,7 +73,7 @@ func (r *Recorder) benchmark(concurrency, times int, warmup bool, executor func(
 	}
 }
 
-func (r *Recorder) Calculate(percents []int) {
+func (r *Recorder) Calculate(percents []int) string {
 	r.TP = map[int]int64{}
 	r.percents = percents
 	for i, v := range percents {
@@ -114,6 +113,8 @@ func (r *Recorder) Calculate(percents []int) {
 		}
 		r.TP[k] = r.Cost[idx]
 	}
+
+	return r.String()
 }
 
 func (r *Recorder) String() string {
@@ -152,13 +153,13 @@ AVG      : %.2fms`,
 	return s
 }
 
-func (r *Recorder) Json() string {
-	b, err := json.MarshalIndent(r.Cost, "", "  ")
-	if err != nil {
-		return err.Error()
-	}
-	return string(b)
-}
+// func (r *Recorder) Json() string {
+// 	b, err := json.MarshalIndent(r.Cost, "", "  ")
+// 	if err != nil {
+// 		return err.Error()
+// 	}
+// 	return string(b)
+// }
 
 func NewRecorder(name string) *Recorder {
 	return &Recorder{Name: name}
