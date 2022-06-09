@@ -53,9 +53,17 @@ func (t *Table) String() string {
 	}
 
 	s += "|"
+	titleLeftPaddingIdx := 0
 	t.alignedTitle = make([]string, len(t.title))
 	for i, v := range t.title {
-		t.alignedTitle[i] = padding(v, maxLen[i])
+		t.alignedTitle[i] = padding(v, maxLen[i], false, 0)
+		if i == 0 {
+			for i, v := range t.alignedTitle[i] {
+				if v != ' ' {
+					titleLeftPaddingIdx = i
+				}
+			}
+		}
 		s += t.alignedTitle[i]
 		s += "|"
 	}
@@ -66,7 +74,7 @@ func (t *Table) String() string {
 		rows := make([]string, len(v))
 		s += "|"
 		for j, vv := range v {
-			rows[j] = padding(vv, maxLen[j])
+			rows[j] = padding(vv, maxLen[j], j == 0, titleLeftPaddingIdx)
 			s += rows[j]
 			s += "|"
 		}
@@ -77,17 +85,28 @@ func (t *Table) String() string {
 	return s
 }
 
-func padding(s string, maxLen int) string {
+func padding(s string, maxLen int, isFirst bool, titleLeftPaddingIdx int) string {
 	paddingLen := maxLen - len(s)
 	if paddingLen > 0 {
-		for i := 0; i < paddingLen/2; i++ {
-			s = " " + s
-		}
-		for i := 0; i < paddingLen/2; i++ {
-			s += " "
-		}
-		if paddingLen%2 == 1 {
-			s += " "
+		if isFirst {
+			for i := 0; i < paddingLen/2 && i < titleLeftPaddingIdx; i++ {
+				s = " " + s
+				paddingLen--
+			}
+			for paddingLen > 0 {
+				s += " "
+				paddingLen--
+			}
+		} else {
+			for i := 0; i < paddingLen/2; i++ {
+				s = " " + s
+			}
+			for i := 0; i < paddingLen/2; i++ {
+				s += " "
+			}
+			if paddingLen%2 == 1 {
+				s += " "
+			}
 		}
 	}
 	return s
