@@ -13,7 +13,7 @@ import (
 )
 
 type psResult struct {
-	RetCPU []uint64                         `json:"cpu"`
+	RetCPU []float64                        `json:"cpu"`
 	RetMEM []*process.MemoryInfoStat        `json:"mem"`
 	RetIO  []*process.IOCountersStat        `json:"io"`
 	RetNET map[string][]*net.IOCountersStat `json:"net"`
@@ -30,7 +30,7 @@ func (p *PSCounter) Start(collectCPU, collectMEM, collectIO, collectNET bool, in
 	p.Add(1)
 	defer p.Done()
 
-	p.RetCPU = make([]uint64, 0)
+	p.RetCPU = make([]float64, 0)
 	p.RetMEM = make([]*process.MemoryInfoStat, 0)
 	p.RetIO = make([]*process.IOCountersStat, 0)
 	p.RetNET = make(map[string][]*net.IOCountersStat)
@@ -50,7 +50,7 @@ func (p *PSCounter) Start(collectCPU, collectMEM, collectIO, collectNET bool, in
 				case <-ticker.C:
 					percent, err := p.proc.CPUPercent()
 					if err == nil {
-						p.RetCPU = append(p.RetCPU, uint64(percent*1000))
+						p.RetCPU = append(p.RetCPU, percent)
 					}
 				}
 			}

@@ -20,7 +20,7 @@ func main() {
 	})
 
 	psCounter.Start(true, true, true, true, time.Second)
-	calculator.Benchmark(100, 2000, func() error {
+	calculator.Benchmark(10000, 1000000, func() error {
 		time.Sleep(time.Second / 1000)
 		return nil
 	}, []int{50, 60, 70, 80, 90, 95, 99, 999})
