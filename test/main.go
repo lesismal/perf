@@ -21,18 +21,19 @@ func main() {
 
 	collector.Start(true, true, true, time.Second)
 
-	recorder.Benchmark(1000, 100000, func() error {
+	recorder.Benchmark(100, 20000, func() error {
 		time.Sleep(time.Second / 1000)
 		return nil
 	})
-	recorder.Calculate([]int{50, 60, 70, 80, 90, 95, 99, 999})
 
 	collector.Stop()
 
 	fmt.Println("-------------------------")
-	fmt.Println("recorder:")
+	recorder.Calculate([]int{50, 60, 70, 80, 90, 95, 99, 999})
 	fmt.Println(recorder.String())
 	fmt.Println("-------------------------")
-	fmt.Println("collector:")
+	recorder.Calculate([]int{50, 75, 90, 95, 999})
+	fmt.Println(recorder.String())
+	fmt.Println("-------------------------")
 	fmt.Println(collector.Json())
 }

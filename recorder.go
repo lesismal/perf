@@ -117,24 +117,30 @@ func (r *Recorder) Calculate(percents []int) {
 }
 
 func (r *Recorder) String() string {
+	used := r.Used.Seconds()
+	usedStr := fmt.Sprintf("%.2fs", used)
+	if used < 1.0 {
+		used = float64(r.Used.Milliseconds())
+		usedStr = fmt.Sprintf("%.2fms", used)
+	}
 	s := fmt.Sprintf(`NAME     : %v
 BENCHMARK: %v times
-TIME USED: %.3fs
-SUCCESS  : %v, %.2f%%
-FAILED   : %v, %.2f%%
+TIME USED: %v
+SUCCESS  : %v, %3.2f%%
+FAILED   : %v, %3.2f%%
 MIN      : %.2fms
 MAX      : %.2fms
 AVG      : %.2fms`,
 		r.Name,
 		len(r.Cost),
-		r.Used.Seconds(),
+		usedStr,
 		r.Success, float64(r.Success)/float64(len(r.Cost))*100.0,
 		r.Failed, float64(r.Failed)/float64(len(r.Cost))*100.0,
 		float64(r.Min)/1000000.0,
 		float64(r.Max)/1000000.0,
 		float64(r.Avg)/1000000.0)
 
-	l := len("benchmark")
+	l := len("BENCHMARK")
 	for _, k := range r.percents {
 		tp := fmt.Sprintf("TP%v", k)
 		for len(tp) < l {
