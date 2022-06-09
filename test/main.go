@@ -19,7 +19,13 @@ func main() {
 		return nil
 	})
 
-	psCounter.Start(true, true, true, true, time.Second)
+	psCounter.Start(perf.PSCountOptions{
+		CountCPU: true,
+		CountMEM: true,
+		CountIO:  true,
+		CountNET: true,
+		Interval: time.Second,
+	})
 	calculator.Benchmark(10000, 1000000, func() error {
 		time.Sleep(time.Second / 1000)
 		return nil

@@ -19,6 +19,14 @@ type psResult struct {
 	RetNET map[string][]*net.IOCountersStat `json:"net"`
 }
 
+type PSCountOptions struct {
+	CountCPU bool
+	CountMEM bool
+	CountIO  bool
+	CountNET bool
+	Interval time.Duration
+}
+
 type PSCounter struct {
 	sync.WaitGroup
 	psResult
@@ -26,7 +34,7 @@ type PSCounter struct {
 	cancel func()
 }
 
-func (p *PSCounter) Start(collectCPU, collectMEM, collectIO, collectNET bool, interval time.Duration) {
+func (p *PSCounter) Start(opt PSCountOptions) {
 	p.Add(1)
 	defer p.Done()
 
@@ -38,11 +46,15 @@ func (p *PSCounter) Start(collectCPU, collectMEM, collectIO, collectNET bool, in
 	ctx, cancel := context.WithCancel(context.Background())
 	p.cancel = cancel
 
-	if collectCPU {
+	if opt.Interval <= 0 {
+		opt.Interval = time.Second
+	}
+
+	if opt.CountCPU {
 		p.Add(1)
 		go func() {
 			defer p.Done()
-			ticker := time.NewTicker(interval)
+			ticker := time.NewTicker(opt.Interval)
 			for {
 				select {
 				case <-ctx.Done():
@@ -57,11 +69,11 @@ func (p *PSCounter) Start(collectCPU, collectMEM, collectIO, collectNET bool, in
 		}()
 	}
 
-	if collectMEM {
+	if opt.CountMEM {
 		p.Add(1)
 		go func() {
 			defer p.Done()
-			ticker := time.NewTicker(interval)
+			ticker := time.NewTicker(opt.Interval)
 			for {
 				select {
 				case <-ctx.Done():
@@ -76,11 +88,11 @@ func (p *PSCounter) Start(collectCPU, collectMEM, collectIO, collectNET bool, in
 		}()
 	}
 
-	if collectIO {
+	if opt.CountIO {
 		p.Add(1)
 		go func() {
 			defer p.Done()
-			ticker := time.NewTicker(interval)
+			ticker := time.NewTicker(opt.Interval)
 			for {
 				select {
 				case <-ctx.Done():
@@ -95,11 +107,11 @@ func (p *PSCounter) Start(collectCPU, collectMEM, collectIO, collectNET bool, in
 		}()
 	}
 
-	if collectNET {
+	if opt.CountNET {
 		p.Add(1)
 		go func() {
 			defer p.Done()
-			ticker := time.NewTicker(interval)
+			ticker := time.NewTicker(opt.Interval)
 			for {
 				select {
 				case <-ctx.Done():
