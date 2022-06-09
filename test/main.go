@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	recorder := perf.NewRecorder()
+	recorder := perf.NewRecorder("test")
 	collector, err := perf.NewCollector(0)
 	if err != nil {
 		panic(err)
@@ -21,10 +21,11 @@ func main() {
 
 	collector.Start(true, true, true, time.Second)
 
-	recorder.Benchmark(1000, 1000000, func() error {
-		time.Sleep(time.Second / 10000)
+	recorder.Benchmark(1000, 100000, func() error {
+		time.Sleep(time.Second / 1000)
 		return nil
 	})
+	recorder.Calculate([]int{50, 60, 70, 80, 90, 95, 99, 999})
 
 	collector.Stop()
 

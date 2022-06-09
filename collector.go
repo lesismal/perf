@@ -12,9 +12,9 @@ import (
 )
 
 type collectorResult struct {
-	RetCPU []uint64              `json:"cpu"`
-	RetMEM []uint64              `json:"mem"`
-	RetNET map[string][][]uint64 `json:"net"`
+	RetCPU []uint64                  `json:"cpu"`
+	RetMEM []*process.MemoryInfoStat `json:"mem"`
+	RetNET map[string][][]uint64     `json:"net"`
 }
 
 type Collector struct {
@@ -29,7 +29,7 @@ func (c *Collector) Start(cpu, mem, net bool, interval time.Duration) {
 	defer c.Done()
 
 	c.RetCPU = make([]uint64, 0)
-	c.RetMEM = make([]uint64, 0)
+	c.RetMEM = make([]*process.MemoryInfoStat, 0)
 	c.RetNET = make(map[string][][]uint64)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -64,9 +64,9 @@ func (c *Collector) Start(cpu, mem, net bool, interval time.Duration) {
 				case <-ctx.Done():
 					return
 				case <-ticker.C:
-					info, err := c.proc.MemoryInfo()
+					stat, err := c.proc.MemoryInfo()
 					if err == nil {
-						c.RetMEM = append(c.RetMEM, info.RSS)
+						c.RetMEM = append(c.RetMEM, stat)
 					}
 				}
 			}
