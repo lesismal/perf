@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-type Recorder struct {
+type Calculator struct {
 	Name     string
 	Total    int
 	Used     time.Duration
@@ -17,37 +17,39 @@ type Recorder struct {
 	Avg      int64
 	Success  int64
 	Failed   int64
-	percents []int
-	TP       map[int]int64
 	Cost     []int64 `json:"-"`
+	tp       map[int]int64
+	percents []int
+	result   string
 }
 
-func (r *Recorder) Warmup(concurrency, times int, executor func() error) {
-	r.benchmark(concurrency, times, true, func(cnt int) {
+func (c *Calculator) Warmup(concurrency, times int, executor func() error) {
+	c.benchmark(concurrency, times, true, func(cnt int) {
 		executor()
 	})
 }
 
-func (r *Recorder) Benchmark(concurrency, times int, executor func() error) {
-	r.benchmark(concurrency, times, false, func(cnt int) {
+func (c *Calculator) Benchmark(concurrency, times int, executor func() error, percents []int) {
+	c.benchmark(concurrency, times, false, func(cnt int) {
 		idx := cnt - 1
 		t := time.Now()
 		err := executor()
-		r.Cost[idx] = time.Since(t).Nanoseconds()
-		atomic.AddInt64(&r.Success, 1)
+		c.Cost[idx] = time.Since(t).Nanoseconds()
+		atomic.AddInt64(&c.Success, 1)
 		if err != nil {
-			atomic.AddInt64(&r.Failed, 1)
+			atomic.AddInt64(&c.Failed, 1)
 		}
 	})
+	c.calculate(percents)
 }
 
-func (r *Recorder) benchmark(concurrency, times int, warmup bool, executor func(cnt int)) {
+func (c *Calculator) benchmark(concurrency, times int, warmup bool, executor func(cnt int)) {
 	var (
 		total uint64
 		wg    sync.WaitGroup
 	)
 
-	r.Cost = make([]int64, times)
+	c.Cost = make([]int64, times)
 
 	begin := time.Now()
 	for i := 0; i < concurrency; i++ {
@@ -68,14 +70,14 @@ func (r *Recorder) benchmark(concurrency, times int, warmup bool, executor func(
 	end := time.Now()
 
 	if !warmup {
-		r.Total = times
-		r.Used = end.Sub(begin)
+		c.Total = times
+		c.Used = end.Sub(begin)
 	}
 }
 
-func (r *Recorder) Calculate(percents []int) string {
-	r.TP = map[int]int64{}
-	r.percents = percents
+func (c *Calculator) calculate(percents []int) {
+	c.tp = map[int]int64{}
+	c.percents = percents
 	for i, v := range percents {
 		if v < 0 {
 			v = 0
@@ -83,45 +85,67 @@ func (r *Recorder) Calculate(percents []int) string {
 		if v > 100 {
 			v = 100
 		}
-		r.TP[v] = 0
-		r.percents[i] = v
+		c.percents[i] = v
 	}
 
-	sort.Slice(r.Cost, func(i, j int) bool {
-		return r.Cost[i] < r.Cost[j]
+	sort.Slice(c.Cost, func(i, j int) bool {
+		return c.Cost[i] < c.Cost[j]
 	})
 
-	r.Min = r.Cost[0]
-	r.Max = r.Cost[len(r.Cost)-1]
+	c.Min = c.Cost[0]
+	c.Max = c.Cost[len(c.Cost)-1]
 
 	var sum int64
-	for _, v := range r.Cost {
+	for _, v := range c.Cost {
 		sum += v
 	}
-	r.Avg = sum / int64(len(r.Cost))
+	c.Avg = sum / int64(len(c.Cost))
 
-	for _, k := range r.percents {
+	for _, k := range c.percents {
 		base := 100
 		shift := k / 100
 		for shift > 0 {
 			base *= 10
 			shift /= 10
 		}
-		idx := int(float64(k) / float64(base) * float64(len(r.Cost)))
-		if idx >= len(r.Cost) {
-			idx = len(r.Cost) - 1
+		idx := int(float64(k) / float64(base) * float64(len(c.Cost)))
+		if idx >= len(c.Cost) {
+			idx = len(c.Cost) - 1
 		}
-		r.TP[k] = r.Cost[idx]
+		c.tp[k] = c.TPN(k)
 	}
-
-	return r.String()
 }
 
-func (r *Recorder) String() string {
-	used := r.Used.Seconds()
+func (c *Calculator) TPN(percent int) int64 {
+	if c.tp == nil {
+		c.tp = map[int]int64{}
+	}
+	if v, ok := c.tp[percent]; ok {
+		return v
+	}
+	base := 100
+	shift := percent / 100
+	for shift > 0 {
+		base *= 10
+		shift /= 10
+	}
+	idx := int(float64(percent) / float64(base) * float64(len(c.Cost)))
+	if idx >= len(c.Cost) {
+		idx = len(c.Cost) - 1
+	}
+	cost := c.Cost[idx]
+	c.tp[percent] = cost
+	return cost
+}
+
+func (c *Calculator) String() string {
+	if c.result != "" {
+		return c.result
+	}
+	used := c.Used.Seconds()
 	usedStr := fmt.Sprintf("%.2fs", used)
 	if used < 1.0 {
-		used = float64(r.Used.Milliseconds())
+		used = float64(c.Used.Milliseconds())
 		usedStr = fmt.Sprintf("%.2fms", used)
 	}
 	s := fmt.Sprintf(`NAME     : %v
@@ -132,35 +156,37 @@ FAILED   : %v, %3.2f%%
 MIN      : %.2fms
 MAX      : %.2fms
 AVG      : %.2fms`,
-		r.Name,
-		len(r.Cost),
+		c.Name,
+		len(c.Cost),
 		usedStr,
-		r.Success, float64(r.Success)/float64(len(r.Cost))*100.0,
-		r.Failed, float64(r.Failed)/float64(len(r.Cost))*100.0,
-		float64(r.Min)/1000000.0,
-		float64(r.Max)/1000000.0,
-		float64(r.Avg)/1000000.0)
+		c.Success, float64(c.Success)/float64(len(c.Cost))*100.0,
+		c.Failed, float64(c.Failed)/float64(len(c.Cost))*100.0,
+		float64(c.Min)/1000000.0,
+		float64(c.Max)/1000000.0,
+		float64(c.Avg)/1000000.0)
 
 	l := len("BENCHMARK")
-	for _, k := range r.percents {
+	for _, k := range c.percents {
 		tp := fmt.Sprintf("TP%v", k)
 		for len(tp) < l {
 			tp += " "
 		}
-		s += fmt.Sprintf("\n%v: %.2fms", tp, float64(r.TP[k])/1000000.0)
+		s += fmt.Sprintf("\n%v: %.2fms", tp, float64(c.tp[k])/1000000.0)
 	}
+
+	c.result = s
 
 	return s
 }
 
-// func (r *Recorder) Json() string {
-// 	b, err := json.MarshalIndent(r.Cost, "", "  ")
+// func (c *Calculator) Json() string {
+// 	b, err := json.MarshalIndent(c .Cost, "", "  ")
 // 	if err != nil {
-// 		return err.Error()
+// 		return erc .Error()
 // 	}
 // 	return string(b)
 // }
 
-func NewRecorder(name string) *Recorder {
-	return &Recorder{Name: name}
+func NewCalculator(name string) *Calculator {
+	return &Calculator{Name: name}
 }

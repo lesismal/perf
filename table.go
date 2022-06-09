@@ -48,7 +48,7 @@ func (t *Table) String() string {
 		}
 	}
 
-	for i, _ := range maxLen {
+	for i := range maxLen {
 		maxLen[i] += 2
 	}
 

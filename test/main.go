@@ -8,34 +8,31 @@ import (
 )
 
 func main() {
-	recorder := perf.NewRecorder("test")
-	collector, err := perf.NewCollector(0)
+	calculator := perf.NewCalculator("test")
+	process, err := perf.NewProcess(0)
 	if err != nil {
 		panic(err)
 	}
 
-	recorder.Warmup(100, 1000, func() error {
+	calculator.Warmup(100, 1000, func() error {
 		time.Sleep(time.Second / 1000)
 		return nil
 	})
 
-	collector.Start(true, true, true, time.Second)
+	process.Start(true, true, true, time.Second)
 
-	recorder.Benchmark(100, 2000, func() error {
+	calculator.Benchmark(100, 2000, func() error {
 		time.Sleep(time.Second / 1000)
 		return nil
-	})
+	}, []int{50, 60, 70, 80, 90, 95, 99, 999})
 
-	collector.Stop()
+	process.Stop()
 
 	fmt.Println("-------------------------")
-	recorder.Calculate([]int{50, 60, 70, 80, 90, 95, 99, 999})
-	fmt.Println(recorder.String())
+	fmt.Println(calculator.String())
+	fmt.Printf("TP50: %.2fms\n", float64(calculator.TPN(50))/1000000.0)
 	fmt.Println("-------------------------")
-	recorder.Calculate([]int{50, 75, 90, 95, 999})
-	fmt.Println(recorder.String())
-	fmt.Println("-------------------------")
-	fmt.Println(collector.Json())
+	fmt.Println(process.Json())
 	fmt.Println("-------------------------")
 	table := perf.NewTable()
 	table.SetTitle([]string{"GoNet", "TP50", "TP99", "CPU", "MEM"})
