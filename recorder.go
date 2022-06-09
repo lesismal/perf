@@ -153,9 +153,9 @@ BENCHMARK: %v times
 TIME USED: %v
 SUCCESS  : %v, %3.2f%%
 FAILED   : %v, %3.2f%%
-MIN      : %.2fms
-MAX      : %.2fms
-AVG      : %.2fms`,
+TPS MIN  : %.2fms
+TPS MAX  : %.2fms
+TPS AVG  : %.2fms`,
 		c.Name,
 		len(c.Cost),
 		usedStr,

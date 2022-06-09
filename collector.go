@@ -8,34 +8,37 @@ import (
 	"sync"
 	"time"
 
+	"github.com/shirou/gopsutil/net"
 	"github.com/shirou/gopsutil/process"
 )
 
 type psResult struct {
-	RetCPU []uint64                  `json:"cpu"`
-	RetMEM []*process.MemoryInfoStat `json:"mem"`
-	RetNET map[string][][]uint64     `json:"net"`
+	RetCPU []uint64                         `json:"cpu"`
+	RetMEM []*process.MemoryInfoStat        `json:"mem"`
+	RetIO  []*process.IOCountersStat        `json:"io"`
+	RetNET map[string][]*net.IOCountersStat `json:"net"`
 }
 
-type Process struct {
+type PSCounter struct {
 	sync.WaitGroup
 	psResult
 	proc   *process.Process
 	cancel func()
 }
 
-func (p *Process) Start(cpu, mem, net bool, interval time.Duration) {
+func (p *PSCounter) Start(collectCPU, collectMEM, collectIO, collectNET bool, interval time.Duration) {
 	p.Add(1)
 	defer p.Done()
 
 	p.RetCPU = make([]uint64, 0)
 	p.RetMEM = make([]*process.MemoryInfoStat, 0)
-	p.RetNET = make(map[string][][]uint64)
+	p.RetIO = make([]*process.IOCountersStat, 0)
+	p.RetNET = make(map[string][]*net.IOCountersStat)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	p.cancel = cancel
 
-	if cpu {
+	if collectCPU {
 		p.Add(1)
 		go func() {
 			defer p.Done()
@@ -54,7 +57,7 @@ func (p *Process) Start(cpu, mem, net bool, interval time.Duration) {
 		}()
 	}
 
-	if mem {
+	if collectMEM {
 		p.Add(1)
 		go func() {
 			defer p.Done()
@@ -73,7 +76,26 @@ func (p *Process) Start(cpu, mem, net bool, interval time.Duration) {
 		}()
 	}
 
-	if net {
+	if collectIO {
+		p.Add(1)
+		go func() {
+			defer p.Done()
+			ticker := time.NewTicker(interval)
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-ticker.C:
+					stat, err := p.proc.IOCounters()
+					if err == nil {
+						p.RetIO = append(p.RetIO, stat)
+					}
+				}
+			}
+		}()
+	}
+
+	if collectNET {
 		p.Add(1)
 		go func() {
 			defer p.Done()
@@ -87,16 +109,9 @@ func (p *Process) Start(cpu, mem, net bool, interval time.Duration) {
 					if err == nil {
 						for _, stat := range stats {
 							if p.RetNET[stat.Name] == nil {
-								p.RetNET[stat.Name] = make([][]uint64, 2)
-								p.RetNET[stat.Name][0] = make([]uint64, 0)
-								p.RetNET[stat.Name][1] = make([]uint64, 0)
-								p.RetNET[stat.Name][2] = make([]uint64, 0)
-								p.RetNET[stat.Name][3] = make([]uint64, 0)
+								p.RetNET[stat.Name] = make([]*net.IOCountersStat, 0)
 							}
-							p.RetNET[stat.Name][0] = append(p.RetNET[stat.Name][0], stat.BytesRecv)
-							p.RetNET[stat.Name][1] = append(p.RetNET[stat.Name][1], stat.BytesRecv)
-							p.RetNET[stat.Name][2] = append(p.RetNET[stat.Name][2], stat.PacketsRecv)
-							p.RetNET[stat.Name][3] = append(p.RetNET[stat.Name][3], stat.PacketsSent)
+							p.RetNET[stat.Name] = append(p.RetNET[stat.Name], &stat)
 						}
 					}
 				}
@@ -105,7 +120,7 @@ func (p *Process) Start(cpu, mem, net bool, interval time.Duration) {
 	}
 }
 
-func (p *Process) Stop() {
+func (p *PSCounter) Stop() {
 	if p.cancel != nil {
 		time.Sleep(time.Second / 10)
 		p.cancel()
@@ -113,11 +128,11 @@ func (p *Process) Stop() {
 	p.Wait()
 }
 
-func (p *Process) String() string {
+func (p *PSCounter) String() string {
 	return fmt.Sprintf("%v", p.psResult)
 }
 
-func (p *Process) Json() string {
+func (p *PSCounter) Json() string {
 	b, err := json.MarshalIndent(p.psResult, "", "  ")
 	if err != nil {
 		return err.Error()
@@ -125,7 +140,7 @@ func (p *Process) Json() string {
 	return string(b)
 }
 
-func NewProcess(pid int) (*Process, error) {
+func NewPSCounter(pid int) (*PSCounter, error) {
 	if pid == 0 {
 		pid = os.Getpid()
 	}
@@ -133,7 +148,7 @@ func NewProcess(pid int) (*Process, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Process{
+	return &PSCounter{
 		proc: proc,
 	}, nil
 }
