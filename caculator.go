@@ -99,19 +99,9 @@ func (c *Calculator) calculate(percents []int) {
 	for _, v := range c.Cost {
 		sum += v
 	}
-	c.Avg = sum / int64(len(c.Cost))
+	c.Avg = Avg(c.Cost)
 
 	for _, k := range c.percents {
-		base := 100
-		shift := k / 100
-		for shift > 0 {
-			base *= 10
-			shift /= 10
-		}
-		idx := int(float64(k) / float64(base) * float64(len(c.Cost)))
-		if idx >= len(c.Cost) {
-			idx = len(c.Cost) - 1
-		}
 		c.tp[k] = c.TPN(k)
 	}
 }
@@ -123,17 +113,7 @@ func (c *Calculator) TPN(percent int) int64 {
 	if v, ok := c.tp[percent]; ok {
 		return v
 	}
-	base := 100
-	shift := percent / 100
-	for shift > 0 {
-		base *= 10
-		shift /= 10
-	}
-	idx := int(float64(percent) / float64(base) * float64(len(c.Cost)))
-	if idx >= len(c.Cost) {
-		idx = len(c.Cost) - 1
-	}
-	cost := c.Cost[idx]
+	cost := TPNFrom(c.Cost, percent, true)
 	c.tp[percent] = cost
 	return cost
 }
@@ -150,17 +130,17 @@ func (c *Calculator) String() string {
 	}
 	s := fmt.Sprintf(`NAME     : %v
 BENCHMARK: %v times
-TIME USED: %v
 SUCCESS  : %v, %3.2f%%
 FAILED   : %v, %3.2f%%
-TPS MIN  : %.2fms
-TPS MAX  : %.2fms
-TPS AVG  : %.2fms`,
+TIME USED: %v
+MIN USED : %.2fms
+MAX USED : %.2fms
+AVG USED : %.2fms`,
 		c.Name,
 		len(c.Cost),
-		usedStr,
 		c.Success, float64(c.Success)/float64(len(c.Cost))*100.0,
 		c.Failed, float64(c.Failed)/float64(len(c.Cost))*100.0,
+		usedStr,
 		float64(c.Min)/1000000.0,
 		float64(c.Max)/1000000.0,
 		float64(c.Avg)/1000000.0)
@@ -189,4 +169,70 @@ TPS AVG  : %.2fms`,
 
 func NewCalculator(name string) *Calculator {
 	return &Calculator{Name: name}
+}
+
+func Min(cost []int64) int64 {
+	if len(cost) == 0 {
+		return 0
+	}
+	vMin := cost[0]
+	for i := 1; i < len(cost); i++ {
+		v := cost[i]
+		if v < vMin {
+			vMin = v
+		}
+	}
+	return vMin
+}
+
+func Max(cost []int64) int64 {
+	if len(cost) == 0 {
+		return 0
+	}
+	vMax := cost[0]
+	for i := 1; i < len(cost); i++ {
+		v := cost[i]
+		if v > vMax {
+			vMax = v
+		}
+	}
+	return vMax
+}
+
+func Avg(cost []int64) int64 {
+	if len(cost) == 0 {
+		return 0
+	}
+	var sum int64
+	for _, v := range cost {
+		sum += v
+	}
+	return sum / int64(len(cost))
+}
+
+func Sum(cost []int64) int64 {
+	var sum int64
+	for _, v := range cost {
+		sum += v
+	}
+	return sum
+}
+
+func TPNFrom(cost []int64, percent int, sorted bool) int64 {
+	if !sorted {
+		sort.Slice(cost, func(i, j int) bool {
+			return cost[i] < cost[j]
+		})
+	}
+	base := 100
+	shift := percent / 100
+	for shift > 0 {
+		base *= 10
+		shift /= 10
+	}
+	idx := int(float64(percent) / float64(base) * float64(len(cost)))
+	if idx >= len(cost) {
+		idx = len(cost) - 1
+	}
+	return cost[idx]
 }
