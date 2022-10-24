@@ -23,14 +23,14 @@ type Calculator struct {
 	result   string
 }
 
-func (c *Calculator) Warmup(concurrency, times int, executor func() error) {
-	c.benchmark(concurrency, times, true, func(cnt int) {
+func (c *Calculator) Warmup(concurrent, times int, executor func() error) {
+	c.benchmark(concurrent, times, true, func(cnt int) {
 		executor()
 	})
 }
 
-func (c *Calculator) Benchmark(concurrency, times int, executor func() error, percents []int) {
-	c.benchmark(concurrency, times, false, func(cnt int) {
+func (c *Calculator) Benchmark(concurrent, times int, executor func() error, percents []int) {
+	c.benchmark(concurrent, times, false, func(cnt int) {
 		idx := cnt - 1
 		t := time.Now()
 		err := executor()
@@ -43,7 +43,7 @@ func (c *Calculator) Benchmark(concurrency, times int, executor func() error, pe
 	c.calculate(percents)
 }
 
-func (c *Calculator) benchmark(concurrency, times int, warmup bool, executor func(cnt int)) {
+func (c *Calculator) benchmark(concurrent, times int, warmup bool, executor func(cnt int)) {
 	var (
 		total uint64
 		wg    sync.WaitGroup
@@ -52,7 +52,7 @@ func (c *Calculator) benchmark(concurrency, times int, warmup bool, executor fun
 	c.Cost = make([]int64, times)
 
 	begin := time.Now()
-	for i := 0; i < concurrency; i++ {
+	for i := 0; i < concurrent; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
