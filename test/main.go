@@ -40,9 +40,8 @@ func main() {
 	fmt.Println("-------------------------")
 	table := perf.NewTable()
 	table.SetTitle([]string{"Frameworks", "TP50", "TP99", "CPU", "MEM"})
-	table.AddRow([]string{"---", "---", "---", "---", "---"})
 	table.AddRow([]string{"net", "3.12ms", "8.97", "1.3%", "17m"})
 	table.AddRow([]string{"nbio", "12.12ms", "22.95", "1.21%", "7m"})
 	table.AddRow([]string{"gnet", "13.54ms", "25.767", "1.32%", "7m"})
-	fmt.Println(table.String())
+	fmt.Println(table.Markdown())
 }

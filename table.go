@@ -15,7 +15,7 @@ func (t *Table) AddRow(row []string) {
 	t.rows = append(t.rows, row)
 }
 
-func (t *Table) String() string {
+func (t *Table) Markdown() string {
 	s := ""
 
 	maxLen := []int{}
@@ -25,7 +25,15 @@ func (t *Table) String() string {
 		maxLen = append(maxLen, len(v))
 	}
 
-	for _, v := range t.rows {
+	rows := make([][]string, len(t.rows)+1)[:1]
+	rows[0] = make([]string, columnNum)
+	for i := 0; i < columnNum; i++ {
+		rows[0][i] = "---"
+	}
+
+	rows = append(rows, t.rows...)
+
+	for _, v := range rows {
 		for j, vv := range v {
 			if len(maxLen) < j+1 {
 				maxLen = append(maxLen, len(vv))
@@ -42,9 +50,9 @@ func (t *Table) String() string {
 		t.title = append(t.title, "")
 	}
 
-	for i, v := range t.rows {
+	for i, v := range rows {
 		for len(v) < columnNum {
-			t.rows[i] = append(t.rows[i], "")
+			rows[i] = append(rows[i], "")
 		}
 	}
 
@@ -69,8 +77,8 @@ func (t *Table) String() string {
 	}
 	s += "\n"
 
-	t.alignedRows = make([][]string, len(t.rows))
-	for i, v := range t.rows {
+	t.alignedRows = make([][]string, len(rows))
+	for i, v := range rows {
 		rows := make([]string, len(v))
 		s += "|"
 		for j, vv := range v {
