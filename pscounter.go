@@ -134,7 +134,7 @@ func (p *PSCounter) Start(opt PSCountOptions) {
 
 func (p *PSCounter) Stop() {
 	if p.cancel != nil {
-		time.Sleep(time.Second / 10)
+		// time.Sleep(time.Second / 100)
 		p.cancel()
 	}
 	p.Wait()
