@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"sync"
 	"time"
@@ -138,6 +139,223 @@ func (p *PSCounter) Stop() {
 		p.cancel()
 	}
 	p.Wait()
+}
+
+func (p *PSCounter) CPUMin() float64 {
+	var ret float64 = math.MaxFloat64
+	for _, v := range p.RetCPU {
+		if v < ret {
+			ret = v
+		}
+	}
+	return ret
+}
+
+func (p *PSCounter) CPUMax() float64 {
+	var ret float64 = 0.0
+	for _, v := range p.RetCPU {
+		if v > ret {
+			ret = v
+		}
+	}
+	return ret
+}
+
+func (p *PSCounter) CPUAvg() float64 {
+	if len(p.RetCPU) == 0 {
+		return 0.0
+	}
+	var ret float64
+	for _, v := range p.RetCPU {
+		ret += v
+	}
+	return ret / float64(len(p.RetCPU))
+}
+
+func (p *PSCounter) MEMRSSMin() uint64 {
+	var ret uint64 = math.MaxUint64
+	for _, v := range p.RetMEM {
+		if v.RSS < ret {
+			ret = v.RSS
+		}
+	}
+	return ret
+}
+
+func (p *PSCounter) MEMRSSMax() uint64 {
+	var ret uint64 = 0
+	for _, v := range p.RetMEM {
+		if v.RSS > ret {
+			ret = v.RSS
+		}
+	}
+	return ret
+}
+
+func (p *PSCounter) MEMRSSAvg() uint64 {
+	if len(p.RetMEM) == 0 {
+		return 0
+	}
+	var ret uint64
+	for _, v := range p.RetMEM {
+		ret += v.RSS
+	}
+	return ret / uint64(len(p.RetMEM))
+}
+
+func (p *PSCounter) MEMVMSMin() uint64 {
+	var ret uint64 = math.MaxUint64
+	for _, v := range p.RetMEM {
+		if v.VMS < ret {
+			ret = v.VMS
+		}
+	}
+	return ret
+}
+
+func (p *PSCounter) MEMVMSMax() uint64 {
+	var ret uint64 = 0
+	for _, v := range p.RetMEM {
+		if v.VMS > ret {
+			ret = v.VMS
+		}
+	}
+	return ret
+}
+
+func (p *PSCounter) MEMVMSAvg() uint64 {
+	if len(p.RetMEM) == 0 {
+		return 0
+	}
+	var ret uint64
+	for _, v := range p.RetMEM {
+		ret += v.VMS
+	}
+	return ret / uint64(len(p.RetMEM))
+}
+
+func (p *PSCounter) IOReadCountMin() uint64 {
+	var ret uint64 = math.MaxUint64
+	for _, v := range p.RetIO {
+		if v.ReadCount < ret {
+			ret = v.ReadCount
+		}
+	}
+	return ret
+}
+
+func (p *PSCounter) IOReadCountMax() uint64 {
+	var ret uint64 = 0
+	for _, v := range p.RetIO {
+		if v.ReadCount > ret {
+			ret = v.ReadCount
+		}
+	}
+	return ret
+}
+
+func (p *PSCounter) IOReadCountAvg() uint64 {
+	if len(p.RetIO) == 0 {
+		return 0
+	}
+	var ret uint64
+	for _, v := range p.RetIO {
+		ret += v.ReadCount
+	}
+	return ret / uint64(len(p.RetIO))
+}
+
+func (p *PSCounter) IOReadBytesMin() uint64 {
+	var ret uint64 = math.MaxUint64
+	for _, v := range p.RetIO {
+		if v.ReadBytes < ret {
+			ret = v.ReadBytes
+		}
+	}
+	return ret
+}
+
+func (p *PSCounter) IOReadBytesMax() uint64 {
+	var ret uint64 = 0
+	for _, v := range p.RetIO {
+		if v.ReadBytes > ret {
+			ret = v.ReadBytes
+		}
+	}
+	return ret
+}
+
+func (p *PSCounter) IOReadBytesAvg() uint64 {
+	if len(p.RetIO) == 0 {
+		return 0
+	}
+	var ret uint64
+	for _, v := range p.RetIO {
+		ret += v.ReadBytes
+	}
+	return ret / uint64(len(p.RetIO))
+}
+
+func (p *PSCounter) IOWriteCountMin() uint64 {
+	var ret uint64 = math.MaxUint64
+	for _, v := range p.RetIO {
+		if v.WriteCount < ret {
+			ret = v.WriteCount
+		}
+	}
+	return ret
+}
+
+func (p *PSCounter) IOWriteCountMax() uint64 {
+	var ret uint64 = 0
+	for _, v := range p.RetIO {
+		if v.WriteCount > ret {
+			ret = v.WriteCount
+		}
+	}
+	return ret
+}
+
+func (p *PSCounter) IOWriteCountAvg() uint64 {
+	if len(p.RetIO) == 0 {
+		return 0
+	}
+	var ret uint64
+	for _, v := range p.RetIO {
+		ret += v.WriteCount
+	}
+	return ret / uint64(len(p.RetIO))
+}
+
+func (p *PSCounter) IOWriteBytesMin() uint64 {
+	var ret uint64 = math.MaxUint64
+	for _, v := range p.RetIO {
+		if v.WriteBytes < ret {
+			ret = v.WriteBytes
+		}
+	}
+	return ret
+}
+
+func (p *PSCounter) IOWriteBytesMax() uint64 {
+	var ret uint64 = 0
+	for _, v := range p.RetIO {
+		if v.WriteBytes > ret {
+			ret = v.WriteBytes
+		}
+	}
+	return ret
+}
+
+func (p *PSCounter) IOWriteBytesAvg() uint64 {
+	if len(p.RetIO) == 0 {
+		return 0
+	}
+	var ret uint64
+	for _, v := range p.RetIO {
+		ret += v.WriteBytes
+	}
+	return ret / uint64(len(p.RetIO))
 }
 
 func (p *PSCounter) String() string {
