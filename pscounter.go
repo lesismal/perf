@@ -7,9 +7,9 @@ import (
 	"math"
 	"os"
 	"os/exec"
+	"regexp"
 	"runtime"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -413,32 +413,30 @@ func RunCommandAndGetOutput(cmd string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return strings.TrimSpace(string(result)), err
+		return string(result), err
 	}
 	result, err := exec.Command("/bin/sh", "-c", cmd).Output()
 	if err != nil {
 		return "", err
 	}
-	return strings.TrimSpace(string(result)), err
-}
-
-func IsProcRunning(procName string) (bool, error) {
-	a := `ps ux | awk '/` + procName + `/ && !/awk/ {print $2}'`
-	pid, err := RunCommandAndGetOutput(a)
-	if err != nil {
-		return false, err
-	}
-	return pid != "", nil
+	return string(result), err
 }
 
 func GetPidByProcName(procName string) (int, error) {
-	a := `ps ux | awk '/` + procName + `/ && !/awk/ {print $2}'`
-	sPid, err := RunCommandAndGetOutput(a)
+	var cmd string
+	if runtime.GOOS == "windows" {
+		cmd = "tasklist | findStr " + procName
+	} else {
+		cmd = `ps ux | awk '/` + procName + `/ && !/awk/ {print $1 " " $2}'`
+	}
+	output, err := RunCommandAndGetOutput(cmd)
 	if err != nil {
 		return -1, err
 	}
-	if sPid != "" {
-		return strconv.Atoi(sPid)
+	re := regexp.MustCompile(`\s+`)
+	rets := re.Split(output, -1)
+	if len(rets) >= 2 {
+		return strconv.Atoi(rets[1])
 	}
-	return -1, fmt.Errorf("invalid pid: %v", sPid)
+	return -1, fmt.Errorf("invalid proc info: \n%v", output)
 }
