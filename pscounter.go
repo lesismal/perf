@@ -6,6 +6,10 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"os/exec"
+	"runtime"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -381,4 +385,60 @@ func NewPSCounter(pid int) (*PSCounter, error) {
 	return &PSCounter{
 		proc: proc,
 	}, nil
+}
+
+func NewPSCounterByProcName(procName string) (*PSCounter, error) {
+	var pid int
+	var err error
+	if procName == "" {
+		pid = os.Getpid()
+	} else {
+		pid, err = GetPidByProcName(procName)
+		if err != nil {
+			return nil, err
+		}
+	}
+	proc, err := process.NewProcess(int32(pid))
+	if err != nil {
+		return nil, err
+	}
+	return &PSCounter{
+		proc: proc,
+	}, nil
+}
+
+func RunCommandAndGetOutput(cmd string) (string, error) {
+	if runtime.GOOS == "windows" {
+		result, err := exec.Command("cmd", "/c", cmd).Output()
+		if err != nil {
+			return "", err
+		}
+		return strings.TrimSpace(string(result)), err
+	}
+	result, err := exec.Command("/bin/sh", "-c", cmd).Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(result)), err
+}
+
+func IsProcRunning(procName string) (bool, error) {
+	a := `ps ux | awk '/` + procName + `/ && !/awk/ {print $2}'`
+	pid, err := RunCommandAndGetOutput(a)
+	if err != nil {
+		return false, err
+	}
+	return pid != "", nil
+}
+
+func GetPidByProcName(procName string) (int, error) {
+	a := `ps ux | awk '/` + procName + `/ && !/awk/ {print $2}'`
+	sPid, err := RunCommandAndGetOutput(a)
+	if err != nil {
+		return -1, err
+	}
+	if sPid != "" {
+		return strconv.Atoi(sPid)
+	}
+	return -1, fmt.Errorf("invalid pid: %v", sPid)
 }
