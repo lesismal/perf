@@ -254,10 +254,10 @@ func I2TimeString(i int64) string {
 	usedStr := fmt.Sprintf("%.2fs", used)
 	if used < 1.0 {
 		used = float64(i) / float64(1e6)
-		usedStr = fmt.Sprintf("%.2fms", used)
+		usedStr = fmt.Sprintf("%.2fus", used)
 		if used < 1.0 {
 			used = float64(i) / float64(1e3)
-			usedStr = fmt.Sprintf("%.2fus", used)
+			usedStr = fmt.Sprintf("%.2fms", used)
 		}
 	}
 	return usedStr
