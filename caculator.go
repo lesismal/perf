@@ -147,8 +147,7 @@ func (c *Calculator) String() string {
 		return c.result
 	}
 
-	s := fmt.Sprintf(`BENCHMARK: %v
-TOTAL    : %v times
+	s := fmt.Sprintf(`TOTAL    : %v times
 SUCCESS  : %v, %3.2f%%
 FAILED   : %v, %3.2f%%
 TPS      : %v
@@ -156,7 +155,6 @@ TIME USED: %v
 MIN USED : %v
 AVG USED : %v
 MAX USED : %v`,
-		c.Name,
 		c.Total,
 		c.Success, float64(c.Success)/float64(len(c.Cost))*100.0,
 		c.Failed, float64(c.Failed)/float64(len(c.Cost))*100.0,
