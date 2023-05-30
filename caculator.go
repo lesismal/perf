@@ -128,12 +128,20 @@ func (c *Calculator) String() string {
 	if c.result != "" {
 		return c.result
 	}
-	used := c.Used.Seconds()
-	usedStr := fmt.Sprintf("%.2fs", used)
-	if used < 1.0 {
-		used = float64(c.Used.Milliseconds())
-		usedStr = fmt.Sprintf("%.2fms", used)
+	i2TimeString := func(i int64) string {
+		used := float64(i) / float64(1e9)
+		usedStr := fmt.Sprintf("%.2fs", used)
+		if used < 1.0 {
+			used = float64(i) / float64(1e6)
+			usedStr = fmt.Sprintf("%.2fms", used)
+			if used < 1.0 {
+				used = float64(i) / float64(1e3)
+				usedStr = fmt.Sprintf("%.2fus", used)
+			}
+		}
+		return usedStr
 	}
+	usedStr := i2TimeString(int64(c.Used))
 	s := fmt.Sprintf(`BENCHMARK: %v
 TOTAL    : %v times
 SUCCESS  : %v, %3.2f%%
