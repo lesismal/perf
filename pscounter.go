@@ -59,16 +59,15 @@ func (p *PSCounter) Start(opt PSCountOptions) {
 		p.Add(1)
 		go func() {
 			defer p.Done()
-			ticker := time.NewTicker(opt.Interval)
 			for {
 				select {
 				case <-ctx.Done():
 					return
-				case <-ticker.C:
-					percent, err := p.proc.CPUPercent()
-					if err == nil {
-						p.RetCPU = append(p.RetCPU, percent)
-					}
+				default:
+				}
+				percent, err := p.proc.Percent(opt.Interval)
+				if err == nil {
+					p.RetCPU = append(p.RetCPU, percent)
 				}
 			}
 		}()
@@ -398,6 +397,7 @@ func NewPSCounterByProcName(procName string) (*PSCounter, error) {
 			return nil, err
 		}
 	}
+	fmt.Printf("--- NewPSCounterByProcName: %v, %v\n", procName, pid)
 	proc, err := process.NewProcess(int32(pid))
 	if err != nil {
 		return nil, err
