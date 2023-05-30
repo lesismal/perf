@@ -90,16 +90,34 @@ func (c *Calculator) calculate(percents []int) {
 		c.percents[i] = v
 	}
 
+	var min, max int64
 	sort.Slice(c.Cost, func(i, j int) bool {
+		if min == 0 && c.Cost[i] > 0 && c.Cost[i] < min {
+			min = c.Cost[i]
+		}
+		if min == 0 && c.Cost[j] > 0 && c.Cost[j] < min {
+			min = c.Cost[j]
+		}
+		if c.Cost[i] > max {
+			max = c.Cost[i]
+		}
+		if c.Cost[j] > max {
+			max = c.Cost[i]
+		}
+		if c.Cost[i] < 0 {
+			return false
+		}
 		return c.Cost[i] < c.Cost[j]
 	})
 
-	c.Min = c.Cost[0]
-	c.Max = c.Cost[len(c.Cost)-1]
+	c.Min = min
+	c.Max = max
 
 	var sum int64
 	for _, v := range c.Cost {
-		sum += v
+		if v > 0 {
+			sum += v
+		}
 	}
 	c.Avg = Avg(c.Cost)
 
@@ -181,8 +199,10 @@ func Min(cost []int64) int64 {
 	vMin := cost[0]
 	for i := 1; i < len(cost); i++ {
 		v := cost[i]
-		if v < vMin {
-			vMin = v
+		if v > 0 {
+			if vMin <= 0 || v < vMin {
+				vMin = v
+			}
 		}
 	}
 	return vMin
@@ -206,17 +226,23 @@ func Avg(cost []int64) int64 {
 	if len(cost) == 0 {
 		return 0
 	}
+	var n int64
 	var sum int64
 	for _, v := range cost {
-		sum += v
+		if v > 0 {
+			sum += v
+			n++
+		}
 	}
-	return sum / int64(len(cost))
+	return sum / n
 }
 
 func Sum(cost []int64) int64 {
 	var sum int64
 	for _, v := range cost {
-		sum += v
+		if v > 0 {
+			sum += v
+		}
 	}
 	return sum
 }
