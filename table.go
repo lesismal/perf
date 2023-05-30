@@ -50,7 +50,7 @@ func (t *Table) Markdown() string {
 		t.title = append(t.title, "")
 	}
 
-	for i, v := range rows {
+	for i := range rows {
 		for len(rows[i]) < columnNum {
 			rows[i] = append(rows[i], "")
 		}
