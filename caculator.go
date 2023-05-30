@@ -134,8 +134,7 @@ func (c *Calculator) String() string {
 		used = float64(c.Used.Milliseconds())
 		usedStr = fmt.Sprintf("%.2fms", used)
 	}
-	s := fmt.Sprintf(`BENCHMARK
-NAME     : %v
+	s := fmt.Sprintf(`BENCHMARK: %v
 TOTAL    : %v times
 SUCCESS  : %v, %3.2f%%
 FAILED   : %v, %3.2f%%
