@@ -34,10 +34,12 @@ func (c *Calculator) Benchmark(concurrent, times int, executor func() error, per
 		idx := cnt - 1
 		t := time.Now()
 		err := executor()
-		c.Cost[idx] = time.Since(t).Nanoseconds()
-		atomic.AddInt64(&c.Success, 1)
 		if err != nil {
 			atomic.AddInt64(&c.Failed, 1)
+			c.Cost[idx] = -1
+		} else {
+			c.Cost[idx] = time.Since(t).Nanoseconds()
+			atomic.AddInt64(&c.Success, 1)
 		}
 	})
 	c.calculate(percents)
@@ -107,7 +109,7 @@ func (c *Calculator) calculate(percents []int) {
 }
 
 func (c *Calculator) TPS() int64 {
-	return int64(float64(c.Total) / c.Used.Seconds())
+	return int64(float64(c.Success) / c.Used.Seconds())
 }
 
 func (c *Calculator) TPN(percent int) int64 {
@@ -227,8 +229,17 @@ func Sum(cost []int64) int64 {
 func TPNFrom(cost []int64, percent int, sorted bool) int64 {
 	if !sorted {
 		sort.Slice(cost, func(i, j int) bool {
+			if cost[i] < 0 {
+				return false
+			}
 			return cost[i] < cost[j]
 		})
+	}
+	for i, v := range cost {
+		if v < 0 {
+			cost = cost[:i]
+			break
+		}
 	}
 	base := 100
 	shift := percent / 100
