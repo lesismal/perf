@@ -397,7 +397,6 @@ func NewPSCounterByProcName(procName string) (*PSCounter, error) {
 			return nil, err
 		}
 	}
-	fmt.Printf("--- NewPSCounterByProcName: %v, %v\n", procName, pid)
 	proc, err := process.NewProcess(int32(pid))
 	if err != nil {
 		return nil, err
