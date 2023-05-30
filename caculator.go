@@ -144,7 +144,7 @@ MIN USED : %.2fms
 MAX USED : %.2fms
 AVG USED : %.2fms`,
 		c.Name,
-		len(c.Cost),
+		c.Total,
 		c.Success, float64(c.Success)/float64(len(c.Cost))*100.0,
 		c.Failed, float64(c.Failed)/float64(len(c.Cost))*100.0,
 		c.TPS(),
