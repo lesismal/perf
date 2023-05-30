@@ -92,10 +92,10 @@ func (c *Calculator) calculate(percents []int) {
 
 	var min, max int64
 	sort.Slice(c.Cost, func(i, j int) bool {
-		if min == 0 && c.Cost[i] > 0 && c.Cost[i] < min {
+		if (min == 0 && c.Cost[i] > 0) || c.Cost[i] < min {
 			min = c.Cost[i]
 		}
-		if min == 0 && c.Cost[j] > 0 && c.Cost[j] < min {
+		if (min == 0 && c.Cost[j] > 0) || c.Cost[j] < min {
 			min = c.Cost[j]
 		}
 		if c.Cost[i] > max {
@@ -154,8 +154,8 @@ FAILED   : %v, %3.2f%%
 TPS      : %v
 TIME USED: %v
 MIN USED : %v
-MAX USED : %v
-AVG USED : %v`,
+AVG USED : %v
+MAX USED : %v`,
 		c.Name,
 		c.Total,
 		c.Success, float64(c.Success)/float64(len(c.Cost))*100.0,
@@ -163,8 +163,8 @@ AVG USED : %v`,
 		c.TPS(),
 		I2TimeString(int64(c.Used)),
 		I2TimeString(c.Min),
-		I2TimeString(c.Max),
-		I2TimeString(c.Avg))
+		I2TimeString(c.Avg),
+		I2TimeString(c.Max))
 
 	l := len("BENCHMARK")
 	for _, k := range c.percents {
@@ -278,12 +278,15 @@ func TPNFrom(cost []int64, percent int, sorted bool) int64 {
 func I2TimeString(i int64) string {
 	used := float64(i) / float64(1e9)
 	usedStr := fmt.Sprintf("%.2fs", used)
-	if used < 1.0 {
+	if i/1e9 < 1 {
 		used = float64(i) / float64(1e6)
-		usedStr = fmt.Sprintf("%.2fus", used)
-		if used < 1.0 {
+		usedStr = fmt.Sprintf("%.2fms", used)
+		if i/1e6 < 1 {
 			used = float64(i) / float64(1e3)
-			usedStr = fmt.Sprintf("%.2fms", used)
+			usedStr = fmt.Sprintf("%.2fus", used)
+			if i/1e3 < 1 {
+				usedStr = fmt.Sprintf("%dns", i)
+			}
 		}
 	}
 	return usedStr
