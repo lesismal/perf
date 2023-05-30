@@ -144,9 +144,9 @@ AVG USED : %v`,
 		c.Failed, float64(c.Failed)/float64(len(c.Cost))*100.0,
 		c.TPS(),
 		I2TimeString(int64(c.Used)),
-		I2MemString(c.Min),
-		I2MemString(c.Max),
-		I2MemString(c.Avg))
+		I2TimeString(c.Min),
+		I2TimeString(c.Max),
+		I2TimeString(c.Avg))
 
 	l := len("BENCHMARK")
 	for _, k := range c.percents {
@@ -154,7 +154,7 @@ AVG USED : %v`,
 		for len(tp) < l {
 			tp += " "
 		}
-		s += fmt.Sprintf("\n%v: %.2fms", tp, float64(c.tp[k])/1000000.0)
+		s += fmt.Sprintf("\n%v: %v", tp, I2TimeString(c.tp[k]))
 	}
 
 	c.result = s
