@@ -9,18 +9,19 @@ import (
 )
 
 type Calculator struct {
-	Name     string
-	Total    int
-	Used     time.Duration
-	Min      int64
-	Max      int64
-	Avg      int64
-	Success  int64
-	Failed   int64
-	Cost     []int64 `json:"-"`
-	tp       map[int]int64
-	percents []int
-	result   string
+	Name         string
+	Total        int
+	Used         time.Duration
+	Min          int64
+	Max          int64
+	Avg          int64
+	Success      int64
+	Failed       int64
+	FailedErrors map[string]int
+	Cost         []int64 `json:"-"`
+	tp           map[int]int64
+	percents     []int
+	result       string
 }
 
 func (c *Calculator) Warmup(concurrent, times int, executor func() error) {
@@ -30,6 +31,8 @@ func (c *Calculator) Warmup(concurrent, times int, executor func() error) {
 }
 
 func (c *Calculator) Benchmark(concurrent, times int, executor func() error, percents []int) {
+	mux := sync.Mutex{}
+	c.FailedErrors = map[string]int{}
 	c.benchmark(concurrent, times, false, func(cnt int) {
 		idx := cnt - 1
 		t := time.Now()
@@ -37,6 +40,11 @@ func (c *Calculator) Benchmark(concurrent, times int, executor func() error, per
 		if err != nil {
 			atomic.AddInt64(&c.Failed, 1)
 			c.Cost[idx] = -1
+			mux.Lock()
+			errStr := err.Error()
+			errCnt := c.FailedErrors[errStr]
+			c.FailedErrors[errStr] = errCnt + 1
+			mux.Unlock()
 		} else {
 			c.Cost[idx] = time.Since(t).Nanoseconds()
 			atomic.AddInt64(&c.Success, 1)
