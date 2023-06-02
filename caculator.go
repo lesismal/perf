@@ -253,7 +253,26 @@ func Sum(cost []int64) int64 {
 	return sum
 }
 
-func TPNFrom(cost []int64, percent int, sorted bool) int64 {
+func TPNFrom(cost []int64, percent int, args ...interface{}) int64 {
+	base := 100
+	shift := percent / 100
+	for shift > 0 {
+		base *= 10
+		shift /= 10
+	}
+
+	return TPNFromBase(cost, percent, base, args...)
+}
+
+func TPNFromBase(cost []int64, percent, base int, args ...interface{}) int64 {
+	sorted := false
+	if len(args) > 0 {
+		v, ok := args[0].(bool)
+		if ok {
+			sorted = v
+		}
+	}
+
 	if !sorted {
 		sort.Slice(cost, func(i, j int) bool {
 			if cost[i] < 0 {
@@ -262,22 +281,19 @@ func TPNFrom(cost []int64, percent int, sorted bool) int64 {
 			return cost[i] < cost[j]
 		})
 	}
+
 	for i, v := range cost {
 		if v < 0 {
 			cost = cost[:i]
 			break
 		}
 	}
-	base := 100
-	shift := percent / 100
-	for shift > 0 {
-		base *= 10
-		shift /= 10
-	}
+
 	idx := int(float64(percent) / float64(base) * float64(len(cost)))
 	if idx >= len(cost) {
 		idx = len(cost) - 1
 	}
+
 	return cost[idx]
 }
 
