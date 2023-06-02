@@ -25,15 +25,17 @@ type Calculator struct {
 }
 
 func (c *Calculator) Warmup(concurrent, times int, executor func() error) {
-	c.benchmark(concurrent, times, true, func(cnt int) {
+	c.benchmark(concurrent, times, func(cnt int) {
 		executor()
 	})
 }
 
 func (c *Calculator) Benchmark(concurrent, times int, executor func() error, percents []int) {
+	begin := time.Now()
 	mux := sync.Mutex{}
+	c.Cost = make([]int64, times)
 	c.FailedErrors = map[string]int{}
-	c.benchmark(concurrent, times, false, func(cnt int) {
+	c.benchmark(concurrent, times, func(cnt int) {
 		idx := cnt - 1
 		t := time.Now()
 		err := executor()
@@ -50,18 +52,18 @@ func (c *Calculator) Benchmark(concurrent, times int, executor func() error, per
 			atomic.AddInt64(&c.Success, 1)
 		}
 	})
+	end := time.Now()
+	c.Total = times
+	c.Used = end.Sub(begin)
 	c.calculate(percents)
 }
 
-func (c *Calculator) benchmark(concurrent, times int, warmup bool, executor func(cnt int)) {
+func (c *Calculator) benchmark(concurrent, times int, executor func(cnt int)) {
 	var (
 		total uint64
 		wg    sync.WaitGroup
 	)
 
-	c.Cost = make([]int64, times)
-
-	begin := time.Now()
 	for i := 0; i < concurrent; i++ {
 		wg.Add(1)
 		go func() {
@@ -77,12 +79,6 @@ func (c *Calculator) benchmark(concurrent, times int, warmup bool, executor func
 	}
 
 	wg.Wait()
-	end := time.Now()
-
-	if !warmup {
-		c.Total = times
-		c.Used = end.Sub(begin)
-	}
 }
 
 func (c *Calculator) calculate(percents []int) {
@@ -239,6 +235,9 @@ func Avg(cost []int64) int64 {
 			sum += v
 			n++
 		}
+	}
+	if n == 0 {
+		return -1
 	}
 	return sum / n
 }
