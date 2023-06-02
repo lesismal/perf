@@ -314,13 +314,17 @@ func I2TimeString(i int64) string {
 }
 
 func I2MemString(i uint64) string {
-	used := float64(i) / float64(1e9)
+	const KB = 1024
+	const MB = 1024 * 1024
+	const GB = 1024 * 1024 * 1024
+
+	used := float64(i) / float64(GB)
 	usedStr := fmt.Sprintf("%.2fG", used)
 	if used < 1.0 {
-		used = float64(i) / float64(1e6)
+		used = float64(i) / float64(MB)
 		usedStr = fmt.Sprintf("%.2fM", used)
 		if used < 1.0 {
-			used = float64(i) / float64(1e3)
+			used = float64(i) / float64(KB)
 			usedStr = fmt.Sprintf("%.2fK", used)
 		}
 	}
