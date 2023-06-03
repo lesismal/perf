@@ -175,6 +175,42 @@ func (p *PSCounter) CPUAvg() float64 {
 	return ret / float64(len(p.RetCPU))
 }
 
+func (p *PSCounter) CPUAvgTrim(head, tail int) float64 {
+	if len(p.RetCPU) == 0 {
+		return 0.0
+	}
+
+	for head+tail > len(p.RetCPU) {
+		if head > 0 {
+			head--
+		}
+		if tail > 0 {
+			tail--
+		}
+	}
+
+	var n int
+	var ret float64
+	for i, v := range p.RetCPU {
+		if head < len(p.RetCPU) {
+			if i < head {
+				continue
+			}
+		}
+		if tail < len(p.RetCPU) {
+			if i < len(p.RetCPU)-tail {
+				continue
+			}
+		}
+		n++
+		ret += v
+	}
+	if n == 0 {
+		return 0.0
+	}
+	return ret / float64(len(p.RetCPU))
+}
+
 func (p *PSCounter) MEMRSSMin() uint64 {
 	var ret uint64 = math.MaxUint64
 	for _, v := range p.RetMEM {
@@ -202,6 +238,42 @@ func (p *PSCounter) MEMRSSAvg() uint64 {
 	var ret uint64
 	for _, v := range p.RetMEM {
 		ret += v.RSS
+	}
+	return ret / uint64(len(p.RetMEM))
+}
+
+func (p *PSCounter) MEMRSSAvgTrim(head, tail int) uint64 {
+	if len(p.RetMEM) == 0 {
+		return 0
+	}
+
+	for head+tail > len(p.RetCPU) {
+		if head > 0 {
+			head--
+		}
+		if tail > 0 {
+			tail--
+		}
+	}
+
+	var n int
+	var ret uint64
+	for i, v := range p.RetMEM {
+		if head < len(p.RetCPU) {
+			if i < head {
+				continue
+			}
+		}
+		if tail < len(p.RetCPU) {
+			if i < len(p.RetCPU)-tail {
+				continue
+			}
+		}
+		n++
+		ret += v.RSS
+	}
+	if n == 0 {
+		return 0
 	}
 	return ret / uint64(len(p.RetMEM))
 }
