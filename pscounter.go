@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"regexp"
 	"runtime"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -142,13 +143,27 @@ func (p *PSCounter) Stop() {
 		p.cancel()
 	}
 	p.Wait()
+
+	sort.Slice(p.RetCPU, func(i, j int) bool {
+		return p.RetCPU[i] < p.RetCPU[j]
+	})
+
+	p.RetIO = make([]*process.IOCountersStat, 0)
+	sort.Slice(p.RetCPU, func(i, j int) bool {
+		return p.RetCPU[i] < p.RetCPU[j]
+	})
+	p.RetNET = make(map[string][]*net.IOCountersStat)
+
 }
 
 func (p *PSCounter) CPUMin() float64 {
-	var ret float64 = math.MaxFloat64
-	for _, v := range p.RetCPU {
-		if v < ret {
-			ret = v
+	var ret float64
+	if len(p.RetCPU) > 0 {
+		ret = math.MaxFloat64
+		for i, v := range p.RetCPU {
+			if i > 0 && v < ret {
+				ret = v
+			}
 		}
 	}
 	return ret
@@ -168,11 +183,16 @@ func (p *PSCounter) CPUAvg() float64 {
 	if len(p.RetCPU) == 0 {
 		return 0.0
 	}
-	var ret float64
-	for _, v := range p.RetCPU {
-		ret += v
+	if len(p.RetCPU) == 1 {
+		return p.RetCPU[0]
 	}
-	return ret / float64(len(p.RetCPU))
+	var ret float64
+	for i, v := range p.RetCPU {
+		if i > 0 {
+			ret += v
+		}
+	}
+	return ret / float64(len(p.RetCPU)-1)
 }
 
 func (p *PSCounter) CPUAvgTrim(head, tail int) float64 {
@@ -208,16 +228,22 @@ func (p *PSCounter) CPUAvgTrim(head, tail int) float64 {
 	if n == 0 {
 		return 0.0
 	}
-	return ret / float64(len(p.RetCPU))
+	return ret / float64(n)
 }
 
 func (p *PSCounter) MEMRSSMin() uint64 {
-	var ret uint64 = math.MaxUint64
-	for _, v := range p.RetMEM {
-		if v.RSS < ret {
-			ret = v.RSS
-		}
+	var ret uint64
+	sort.Slice(p.RetMEM, func(i, j int) bool {
+		return p.RetMEM[i].RSS < p.RetMEM[j].RSS
+	})
+
+	if len(p.RetMEM) > 0 {
+		ret = p.RetMEM[0].RSS
 	}
+	if len(p.RetMEM) > 1 {
+		ret = p.RetMEM[1].RSS
+	}
+
 	return ret
 }
 
@@ -235,11 +261,16 @@ func (p *PSCounter) MEMRSSAvg() uint64 {
 	if len(p.RetMEM) == 0 {
 		return 0
 	}
-	var ret uint64
-	for _, v := range p.RetMEM {
-		ret += v.RSS
+	if len(p.RetMEM) == 1 {
+		return p.RetMEM[0].RSS
 	}
-	return ret / uint64(len(p.RetMEM))
+	var ret uint64
+	for i, v := range p.RetMEM {
+		if i > 0 {
+			ret += v.RSS
+		}
+	}
+	return ret / uint64(len(p.RetMEM)-1)
 }
 
 func (p *PSCounter) MEMRSSAvgTrim(head, tail int) uint64 {
