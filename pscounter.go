@@ -158,7 +158,10 @@ func (p *PSCounter) Stop() {
 
 func (p *PSCounter) CPUMin() float64 {
 	var ret float64
-	if len(p.RetCPU) > 0 {
+	if len(p.RetCPU) == 1 {
+		return p.RetCPU[0]
+	}
+	if len(p.RetCPU) > 1 {
 		ret = math.MaxFloat64
 		for i, v := range p.RetCPU {
 			if i > 0 && v < ret {
