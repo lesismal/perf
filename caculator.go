@@ -96,10 +96,10 @@ func (c *Calculator) calculate(percents []int) {
 
 	var min, max int64
 	sort.Slice(c.Cost, func(i, j int) bool {
-		if (min == 0 && c.Cost[i] > 0) || c.Cost[i] < min {
+		if (min == 0 && c.Cost[i] > 0) || (c.Cost[i] > 0 && c.Cost[i] < min) {
 			min = c.Cost[i]
 		}
-		if (min == 0 && c.Cost[j] > 0) || c.Cost[j] < min {
+		if (min == 0 && c.Cost[j] > 0) || (c.Cost[j] > 0 && c.Cost[j] < min) {
 			min = c.Cost[j]
 		}
 		if c.Cost[i] > max {
