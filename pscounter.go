@@ -19,18 +19,20 @@ import (
 )
 
 type psResult struct {
-	RetCPU []float64                        `json:"cpu"`
-	RetMEM []*process.MemoryInfoStat        `json:"mem"`
-	RetIO  []*process.IOCountersStat        `json:"io"`
-	RetNET map[string][]*net.IOCountersStat `json:"net"`
+	RetCPU       []float64                        `json:"cpu"`
+	RetMEM       []*process.MemoryInfoStat        `json:"mem"`
+	RetIO        []*process.IOCountersStat        `json:"io"`
+	RetNET       map[string][]*net.IOCountersStat `json:"net"`
+	RetGoroutine []int                            `json:"go"`
 }
 
 type PSCountOptions struct {
-	CountCPU bool
-	CountMEM bool
-	CountIO  bool
-	CountNET bool
-	Interval time.Duration
+	CountCPU       bool
+	CountMEM       bool
+	CountIO        bool
+	CountNET       bool
+	CountGoroutine bool
+	Interval       time.Duration
 }
 
 type PSCounter struct {
@@ -135,6 +137,22 @@ func (p *PSCounter) Start(opt PSCountOptions) {
 			}
 		}()
 	}
+
+	if opt.CountGoroutine {
+		p.Add(1)
+		go func() {
+			defer p.Done()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				default:
+				}
+				p.RetGoroutine = append(p.RetGoroutine, runtime.NumCPU())
+			}
+		}()
+	}
+
 }
 
 func (p *PSCounter) Stop() {
@@ -144,16 +162,13 @@ func (p *PSCounter) Stop() {
 	}
 	p.Wait()
 
-	sort.Slice(p.RetCPU, func(i, j int) bool {
-		return p.RetCPU[i] < p.RetCPU[j]
-	})
+	// sort.Slice(p.RetCPU, func(i, j int) bool {
+	// 	return p.RetCPU[i] < p.RetCPU[j]
+	// })
 
-	p.RetIO = make([]*process.IOCountersStat, 0)
-	sort.Slice(p.RetCPU, func(i, j int) bool {
-		return p.RetCPU[i] < p.RetCPU[j]
-	})
-	p.RetNET = make(map[string][]*net.IOCountersStat)
+	// p.RetIO = make([]*process.IOCountersStat, 0)
 
+	// p.RetNET = make(map[string][]*net.IOCountersStat)
 }
 
 func (p *PSCounter) CPUMin() float64 {
@@ -465,6 +480,48 @@ func (p *PSCounter) IOWriteBytesAvg() uint64 {
 		ret += v.WriteBytes
 	}
 	return ret / uint64(len(p.RetIO))
+}
+
+func (p *PSCounter) NumGoroutineMin() int {
+	var ret int
+	if len(p.RetGoroutine) == 1 {
+		return p.RetGoroutine[0]
+	}
+	if len(p.RetGoroutine) > 1 {
+		ret = math.MaxInt
+		for i, v := range p.RetGoroutine {
+			if i > 0 && v < ret {
+				ret = v
+			}
+		}
+	}
+	return ret
+}
+
+func (p *PSCounter) NumGoroutineMinMax() int {
+	var ret int
+	for _, v := range p.RetGoroutine {
+		if v > ret {
+			ret = v
+		}
+	}
+	return ret
+}
+
+func (p *PSCounter) NumGoroutineMinAvg() int {
+	if len(p.RetGoroutine) == 0 {
+		return 0
+	}
+	if len(p.RetCPU) == 1 {
+		return p.RetGoroutine[0]
+	}
+	var ret int
+	for i, v := range p.RetGoroutine {
+		if i > 0 {
+			ret += v
+		}
+	}
+	return ret / (len(p.RetCPU) - 1)
 }
 
 func (p *PSCounter) String() string {
