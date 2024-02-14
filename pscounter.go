@@ -498,7 +498,7 @@ func (p *PSCounter) NumGoroutineMin() int {
 	return ret
 }
 
-func (p *PSCounter) NumGoroutineMinMax() int {
+func (p *PSCounter) NumGoroutineMax() int {
 	var ret int
 	for _, v := range p.RetGoroutine {
 		if v > ret {
@@ -508,7 +508,7 @@ func (p *PSCounter) NumGoroutineMinMax() int {
 	return ret
 }
 
-func (p *PSCounter) NumGoroutineMinAvg() int {
+func (p *PSCounter) NumGoroutineAvg() int {
 	if len(p.RetGoroutine) == 0 {
 		return 0
 	}
