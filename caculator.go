@@ -31,30 +31,45 @@ func (c *Calculator) Warmup(concurrent, times int, executor func() error) {
 }
 
 func (c *Calculator) Benchmark(concurrent, times int, executor func() error, percents []int) {
+	c.Total = times
 	begin := time.Now()
 	mux := sync.Mutex{}
-	c.Cost = make([]int64, times)
 	c.FailedErrors = map[string]int{}
-	c.benchmark(concurrent, times, func(cnt int) {
-		idx := cnt - 1
-		t := time.Now()
-		err := executor()
-		if err != nil {
-			atomic.AddInt64(&c.Failed, 1)
-			c.Cost[idx] = -1
-			mux.Lock()
-			errStr := err.Error()
-			errCnt := c.FailedErrors[errStr]
-			c.FailedErrors[errStr] = errCnt + 1
-			mux.Unlock()
-		} else {
-			c.Cost[idx] = time.Since(t).Nanoseconds()
-			atomic.AddInt64(&c.Success, 1)
-		}
-	})
-	end := time.Now()
-	c.Total = times
-	c.Used = end.Sub(begin)
+	if len(percents) > 0 {
+		c.Cost = make([]int64, times)
+		c.benchmark(concurrent, times, func(cnt int) {
+			idx := cnt - 1
+			t := time.Now()
+			err := executor()
+			if err != nil {
+				atomic.AddInt64(&c.Failed, 1)
+				c.Cost[idx] = -1
+				mux.Lock()
+				errStr := err.Error()
+				errCnt := c.FailedErrors[errStr]
+				c.FailedErrors[errStr] = errCnt + 1
+				mux.Unlock()
+			} else {
+				c.Cost[idx] = time.Since(t).Nanoseconds()
+				atomic.AddInt64(&c.Success, 1)
+			}
+		})
+	} else {
+		c.benchmark(concurrent, times, func(cnt int) {
+			err := executor()
+			if err != nil {
+				atomic.AddInt64(&c.Failed, 1)
+				mux.Lock()
+				errStr := err.Error()
+				errCnt := c.FailedErrors[errStr]
+				c.FailedErrors[errStr] = errCnt + 1
+				mux.Unlock()
+			} else {
+				atomic.AddInt64(&c.Success, 1)
+			}
+		})
+	}
+	c.Used = time.Since(begin)
 	c.calculate(percents)
 }
 
@@ -106,7 +121,7 @@ func (c *Calculator) calculate(percents []int) {
 			max = c.Cost[i]
 		}
 		if c.Cost[j] > max {
-			max = c.Cost[i]
+			max = c.Cost[j]
 		}
 		if c.Cost[i] < 0 {
 			return false
